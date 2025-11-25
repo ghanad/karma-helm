@@ -1,0 +1,31 @@
+# Default values for karma chart
+replicaCount: 1
+
+image:
+  repository: prymitive/karma
+  tag: v0.121
+  pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+config: |
+  alertmanager:
+    servers: []
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - host: karma.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: tls-secret
+      hosts:
+        - karma.example.com

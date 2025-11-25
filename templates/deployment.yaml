@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-karma
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: karma
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: karma
+  template:
+    metadata:
+      labels:
+        app: karma
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: karma
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["/karma"]
+        args:
+        - --config.file
+        - /etc/config/karma.yml
+        ports:
+        - containerPort: {{ .Values.containerPort }}
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.containerPort }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.containerPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Release.Name }}-karma-configmap
