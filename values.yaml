@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: prymitive/karma
+  repository: ghcr.io/prymitive/karma
   tag: v0.121
   pullPolicy: IfNotPresent
 
