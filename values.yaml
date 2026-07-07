@@ -6,20 +6,66 @@ image:
   tag: v0.121
   pullPolicy: IfNotPresent
 
+imagePullSecrets: []
+
+podAnnotations: {}
+
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
 containerPort: 8080
+
+command:
+  - /karma
+
+args:
+  - --config.file
+  - /etc/config/karma.yml
 
 service:
   type: ClusterIP
   port: 80
   targetPort: 8080
+  annotations: {}
 
 config: |
   alertmanager:
     servers: []
 
+resources:
+  limits:
+    memory: 256Mi
+    cpu: 200m
+  requests:
+    memory: 256Mi
+    cpu: 200m
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
 ingress:
   enabled: true
   ingressClassName: nginx
+  annotations: {}
   hosts:
     - host: karma.example.com
       paths:
@@ -29,3 +75,9 @@ ingress:
     - secretName: tls-secret
       hosts:
         - karma.example.com
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

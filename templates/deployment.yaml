@@ -14,50 +14,68 @@ spec:
     metadata:
       labels:
         app: karma
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: karma
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        command: ["/karma"]
+        {{- with .Values.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        command:
+          {{- toYaml .Values.command | nindent 10 }}
         args:
-        - --config.file
-        - /etc/config/karma.yml
+          {{- toYaml .Values.args | nindent 10 }}
         ports:
         - containerPort: {{ .Values.containerPort }}
         
+        {{- with .Values.livenessProbe }}
         livenessProbe:
-          httpGet:
-            path: /health
-            port: {{ .Values.containerPort }}
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          timeoutSeconds: 5
-          failureThreshold: 3
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
         
+        {{- with .Values.readinessProbe }}
         readinessProbe:
-          httpGet:
-            path: /health
-            port: {{ .Values.containerPort }}
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
 
         volumeMounts:
         - name: config-volume
           mountPath: /etc/config
+        {{- with .Values.resources }}
         resources:
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-          requests:
-            memory: "256Mi"
-            cpu: "200m"
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       volumes:
       - name: config-volume
         configMap:
           name: {{ .Release.Name }}-karma-configmap
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
