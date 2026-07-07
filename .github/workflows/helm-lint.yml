@@ -19,3 +19,12 @@ jobs:
 
       - name: Run helm lint
         run: helm lint .
+
+      - name: Render default templates
+        run: helm template karma .
+
+      - name: Render templates with ingress enabled
+        run: >
+          helm template karma .
+          --set ingress.enabled=true
+          --set ingress.ingressClassName=nginx

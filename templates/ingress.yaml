@@ -2,15 +2,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-karma
+  name: {{ include "karma.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "karma.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   {{- if .Values.ingress.ingressClassName }}
-  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.ingress.ingressClassName | quote }}
   {{- end }}
   {{- if .Values.ingress.tls }}
   tls:
@@ -19,21 +21,21 @@ spec:
         {{- range .hosts }}
         - {{ . | quote }}
         {{- end }}
-      secretName: {{ .secretName }}
+      secretName: {{ .secretName | quote }}
     {{- end }}
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
+    {{- $paths := .paths | default (list (dict "path" "/" "pathType" "Prefix")) }}
     - host: {{ .host | quote }}
       http:
         paths:
-          {{- $paths := .paths | default (list (dict "path" "/" "pathType" "Prefix")) -}}
-          {{- range $paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          {{ range $paths }}
+          - path: {{ .path | quote }}
+            pathType: {{ .pathType | quote }}
             backend:
               service:
-                name: {{ $.Release.Name }}-karma-service
+                name: {{ include "karma.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}

@@ -1,20 +1,41 @@
 # Default values for karma chart
 replicaCount: 1
 
+nameOverride: ""
+fullnameOverride: ""
+
 image:
   repository: ghcr.io/prymitive/karma
-  tag: v0.121
+  tag: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+automountServiceAccountToken: false
 
 podAnnotations: {}
 
 podLabels: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
 
 containerPort: 8080
 
@@ -28,7 +49,7 @@ args:
 service:
   type: ClusterIP
   port: 80
-  targetPort: 8080
+  targetPort: http
   annotations: {}
 
 config: |
@@ -46,7 +67,7 @@ resources:
 livenessProbe:
   httpGet:
     path: /health
-    port: 8080
+    port: http
   initialDelaySeconds: 15
   periodSeconds: 20
   timeoutSeconds: 5
@@ -55,7 +76,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 8080
+    port: http
   initialDelaySeconds: 5
   periodSeconds: 10
   timeoutSeconds: 5
@@ -63,8 +84,8 @@ readinessProbe:
   failureThreshold: 3
 
 ingress:
-  enabled: true
-  ingressClassName: nginx
+  enabled: false
+  ingressClassName: ""
   annotations: {}
   hosts:
     - host: karma.example.com
@@ -81,3 +102,7 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+revisionHistoryLimit: 10
+
+strategy: {}

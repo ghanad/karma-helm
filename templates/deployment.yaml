@@ -1,28 +1,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-karma
+  name: {{ include "karma.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: karma
+    {{- include "karma.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
-      app: karma
+      {{- include "karma.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: karma
-        {{- with .Values.podLabels }}
+        {{- with omit .Values.podLabels "app.kubernetes.io/name" "app.kubernetes.io/instance" }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        {{- include "karma.selectorLabels" . | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ include "karma.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -33,7 +40,7 @@ spec:
       {{- end }}
       containers:
       - name: karma
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        image: {{ printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) | quote }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         {{- with .Values.securityContext }}
         securityContext:
@@ -44,7 +51,9 @@ spec:
         args:
           {{- toYaml .Values.args | nindent 10 }}
         ports:
-        - containerPort: {{ .Values.containerPort }}
+        - name: http
+          containerPort: {{ .Values.containerPort }}
+          protocol: TCP
         
         {{- with .Values.livenessProbe }}
         livenessProbe:
@@ -66,7 +75,7 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: {{ .Release.Name }}-karma-configmap
+          name: {{ include "karma.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

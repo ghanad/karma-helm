@@ -1,8 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-karma-configmap
+  name: {{ include "karma.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "karma.labels" . | nindent 4 }}
 data:
   karma.yml: |-
 {{ .Values.config | indent 4 }}
